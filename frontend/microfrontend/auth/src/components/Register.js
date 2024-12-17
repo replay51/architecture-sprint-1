@@ -1,9 +1,22 @@
 import React from 'react';
 import "../index.css";
+import * as auth from "../utils/auth.js";
 
-function Register ({ onRegister }){
+function Register ({ eventBus }){
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+
+  function onRegister({email, password}) {
+    auth
+        .register(email, password)
+        .then((res) => {
+          eventBus.publish('successRegister', res);
+        })
+        .catch((err) => {
+          console.log(err);
+          eventBus.publish('fail', err);
+        });
+  }
 
   function handleSubmit(e){
     e.preventDefault();

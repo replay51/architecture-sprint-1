@@ -5,6 +5,7 @@ import Header from "./Header";
 import InfoTooltip from "./InfoTooltip";
 import ProtectedRoute from "./ProtectedRoute";
 import * as auth from "../utils/auth.js";
+import eventBus from '../utils/EventBus';
 
 const Login = lazy(() => import('auth/Login').catch(() => {
         return {default: () => <div className='error'>Component is not available!</div>};
@@ -22,11 +23,26 @@ const Main = lazy(() => import('feed/Main').catch(() => {
 function MasterPage() {
     const [isInfoToolTipOpen, setIsInfoToolTipOpen] = React.useState(false);
     const [tooltipStatus, setTooltipStatus] = React.useState("");
-    const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+    const token = localStorage.getItem("jwt");
+    const [isLoggedIn, setIsLoggedIn] = React.useState(!!token);
     const [email, setEmail] = React.useState("email");
     const history = useHistory();
 
     React.useEffect(() => {
+        eventBus.subscribe('fail', (item) => {
+            setTooltipStatus("fail");
+            setIsInfoToolTipOpen(true);
+        });
+        eventBus.subscribe('successRegister', (item) => {
+            setTooltipStatus("success");
+            setIsInfoToolTipOpen(true);
+            history.push("/signin");
+        });
+        eventBus.subscribe('successLogin', (email) => {
+            setIsLoggedIn(true);
+            setEmail(email);
+            history.push("/");
+        });
         const token = localStorage.getItem("jwt");
         if (token) {
             auth
@@ -42,36 +58,6 @@ function MasterPage() {
                 });
         }
     }, [history]);
-
-    function onRegister({email, password}) {
-        auth
-            .register(email, password)
-            .then((res) => {
-                setTooltipStatus("success");
-                setIsInfoToolTipOpen(true);
-                history.push("/signin");
-            })
-            .catch((err) => {
-                console.log(err);
-                setTooltipStatus("fail");
-                setIsInfoToolTipOpen(true);
-            });
-    }
-
-    function onLogin({email, password}) {
-        auth
-            .login(email, password)
-            .then((res) => {
-                setIsLoggedIn(true);
-                setEmail(email);
-                history.push("/");
-            })
-            .catch((err) => {
-                console.log(err);
-                setTooltipStatus("fail");
-                setIsInfoToolTipOpen(true);
-            });
-    }
 
     function onSignOut() {
         // при вызове обработчика onSignOut происходит удаление jwt
@@ -97,12 +83,12 @@ function MasterPage() {
                 />
                 <Route path="/signup">
                     <Suspense fallback={<div>Loading...</div>}>
-                        <Register onRegister={onRegister}/>
+                        <Register eventBus={eventBus}/>
                     </Suspense>
                 </Route>
                 <Route path="/signin">
                     <Suspense fallback={<div>Loading...</div>}>
-                        <Login onLogin={onLogin}/>
+                        <Login eventBus={eventBus}/>
                     </Suspense>
                 </Route>
             </Switch>

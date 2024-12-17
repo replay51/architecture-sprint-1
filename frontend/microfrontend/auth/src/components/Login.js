@@ -1,11 +1,23 @@
 import React from 'react';
-
+import * as auth from "../utils/auth.js";
 import '../blocks/login/login.css';
 import "../index.css";
 
-function Login ({ onLogin }){
+function Login ({ eventBus }){
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+
+  function onLogin({email, password}) {
+    auth
+        .login(email, password)
+        .then((res) => {
+          eventBus.publish('successLogin', email);
+        })
+        .catch((err) => {
+          console.log(err);
+          eventBus.publish('fail', err);
+        });
+  }
 
   function handleSubmit(e){
     e.preventDefault();
